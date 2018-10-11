@@ -5,7 +5,10 @@ from django.contrib.postgres.fields import ArrayField
 class Game(models.Model):
 	key = models.CharField(max_length=255)
 	history = ArrayField(ArrayField(models.CharField(max_length=10)))
-	date_create = models.DateTimeField(auto_now_add=True)
+	start = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ('start',)
 
 
 class PlayerGame(models.Model):
