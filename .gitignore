@@ -1,0 +1,12 @@
+*.pyc
+*~
+__pycache__
+node_modules
+/media
+/static
+local_settings.py
+.idea
+package-lock.json
+debug.log
+/htmlcov
+.coverage
