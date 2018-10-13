@@ -28,7 +28,6 @@ ERROR_MESSAGE = lambda field: "'{}' is invalid".format(field)
 
 @api_view(['POST'])
 def create_game(request):
-
     if 'player_guesses' not in request.data or not isinstance(request.data['player_guesses'], bool):
         return Response({'error': ERROR_MESSAGE('player_guesses')}, status=status.HTTP_400_BAD_REQUEST)
     elif 'digits' not in request.data or not isinstance(request.data['digits'], int) or \
@@ -55,9 +54,14 @@ def create_game(request):
 
     return Response(serializer.data)
 
+
 # Получить данные игры по GET запросу с идентификатором игры
-@api_view(['GET'])
-def game(request, key):
+@api_view(['POST'])
+def game(request):
+    if 'key' not in request.data or not isinstance(request.data['key'], str):
+        return Response({'error': ERROR_MESSAGE('key')}, status=status.HTTP_400_BAD_REQUEST)
+
+    key = request.data['key']
     game = get_object_or_404(Game, key=key)
     serializer = GameSerializer(game)
 
