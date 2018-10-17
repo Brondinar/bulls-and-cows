@@ -13,6 +13,8 @@ from itertools import permutations, combinations
 from bulls_and_cows.utils import cows_filter, bulls_filter, fields_match
 from django.shortcuts import get_object_or_404
 from re import match
+from time import perf_counter
+from django.core.cache import cache
 
 ERROR_MESSAGE = lambda field: "'{}' is invalid".format(field)
 
@@ -24,8 +26,6 @@ ERROR_MESSAGE = lambda field: "'{}' is invalid".format(field)
     'digits': (0...10)
 }
 '''
-
-
 @api_view(['POST'])
 def create_game(request):
     if 'player_guesses' not in request.data or not isinstance(request.data['player_guesses'], bool):
@@ -43,12 +43,11 @@ def create_game(request):
         secret_number = ''.join(choice(list(permutations('0123456789', digits))))
         player_game = PlayerGame(game=game, secret_number=secret_number)
         player_game.save()
+
     elif not request.data['player_guesses']:
         digits = int(request.data['digits'])
         available_numbers = list(permutations("0123456789", digits))
-        available_numbers = [''.join(number) for number in available_numbers]
-        computer_game = ComputerGame(game=game, available_numbers=available_numbers)
-        computer_game.save()
+        cache.set('available_numbers', available_numbers, 300)
 
     serializer = GameSerializer(game)
 
@@ -76,8 +75,6 @@ def game(request):
     'number': '([0-9]{1, 10})'
 }
 '''
-
-
 @api_view(['POST'])
 def try_to_guess(request):
     if 'key' not in request.data or not isinstance(request.data['key'], str):
@@ -119,14 +116,14 @@ def get_computer_try(request):
         return Response({'error': ERROR_MESSAGE('key')}, status=status.HTTP_400_BAD_REQUEST)
 
     key = request.data['key']
-    computer_game = get_object_or_404(PlayerGame, game__key=key)
+    game = get_object_or_404(Game, key=key)
 
-    if computer_game.game.history is not None and computer_game.game.history[-1]['winner']:
-        serializer = GameSerializer(computer_game.game)
+    if game.history is not None and game.history[-1]['winner']:
+        serializer = GameSerializer(game)
         return Response(serializer.data)
 
     try:
-        number = choice(computer_game.available_numbers)
+        number = ''.join(choice(cache.get('available_numbers')))
     except IndexError as error:
         return Response({'error': error}, status=400)
     else:
@@ -152,29 +149,41 @@ def send_answer(request):
     bulls = int(request.data['bulls'])
     cows = int(request.data['cows'])
     history_data = {'number': number, 'bulls': bulls, 'cows': cows, 'winner': False}
-    computer_game = get_object_or_404(ComputerGame, game__key=key)
+    # computer_game = get_object_or_404(ComputerGame, game__key=key)
+    game = get_object_or_404(Game, key=key)
 
     if bulls == len(number):
         history_data['winner'] = True
-        serializer = GameSerializer(computer_game.game)
+        # serializer = GameSerializer(computer_game.game)
+        serializer = GameSerializer(game)
         return Response(serializer.data)
 
-    if computer_game.game.history is not None and computer_game.game.history[-1]['winner']:
-        serializer = GameSerializer(computer_game.game)
+    # if computer_game.game.history is not None and computer_game.game.history[-1]['winner']:
+    #     serializer = GameSerializer(computer_game.game)
+    #     return Response(serializer.data)
+
+    if game.history is not None and game.history[-1]['winner']:
+        serializer = GameSerializer(game)
         return Response(serializer.data)
 
-    available_variants = cows_filter(bulls + cows, number, computer_game.available_numbers)
+    available_variants = cows_filter(bulls + cows, number, cache.get('available_numbers'))
     available_variants = bulls_filter(bulls, number, available_variants)
-    computer_game.available_numbers = available_variants
+    # computer_game.available_numbers = available_variants
+    cache.set('available_numbers', available_variants, 300)
     history_data = {'number': number, 'bulls': bulls, 'cows': cows, 'winner': False}
 
-    if computer_game.game.history is None:
-        computer_game.game.history = [history_data]
-    else:
-        computer_game.game.history.append(history_data)
+    # if computer_game.game.history is None:
+    #     computer_game.game.history = [history_data]
+    # else:
+    #     computer_game.game.history.append(history_data)
 
-    computer_game.game.save()
-    computer_game.save()
-    serializer = GameSerializer(computer_game.game)
+    if game.history is None:
+        game.history = [history_data]
+    else:
+        game.history.append(history_data)
+
+    game.save()
+    # computer_game.save()
+    serializer = GameSerializer(game)
 
     return Response(serializer.data)

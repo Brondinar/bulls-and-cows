@@ -31,8 +31,7 @@ def cows_filter(cows_and_bulls, number, variants):
     pos_comb = list(combinations(number, cows_and_bulls))
     for comb in pos_comb:
         for num in variants:
-            if set(comb).issubset(set(num)) and set(
-                    set(number) ^ set(comb)).isdisjoint(num):
+            if set(comb).issubset(set(num)) and set(set(number) ^ set(comb)).isdisjoint(num):
                 possible_variants.append(num)
 
     return possible_variants
