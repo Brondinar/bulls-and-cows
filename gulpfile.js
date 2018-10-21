@@ -65,7 +65,7 @@ gulp.task('js', function() {
 		.pipe(plumber())
 		.pipe(sourcemaps.init())
 		.pipe(webpackStream({
-			mode: 'development',
+			mode: 'production',
 			output: {
 			    filename: 'main.js'
 			},
