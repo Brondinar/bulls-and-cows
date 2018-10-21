@@ -1,0 +1,36 @@
+.game-window {
+	background-color: @main-back;
+	border-left: 1px solid @border-color;
+	border-right: 1px solid @border-color;
+	overflow: auto;
+
+	.history {
+		width: 100%;
+		text-align: left;
+		border-collapse: collapse;
+
+		thead {
+			border-bottom: 2px solid @border-color;
+		}
+
+		th, .turn__td {
+			padding: 15px 20px;
+
+			&:last-of-type {
+				border-right: none;
+			}
+		}
+
+		.turn {
+			border-bottom: 1px solid @border-color;
+
+			&:nth-of-type(2n-1) {
+				background-color: @extra-back;
+			}
+
+			.turn__td {
+				font-family: sans-serif;
+			}
+		}
+	}
+}

@@ -1,19 +1,14 @@
-from django.http import HttpResponse, JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.renderers import JSONRenderer
-from rest_framework.parsers import JSONParser
-from bulls_and_cows.models import Game, PlayerGame, ComputerGame
-from bulls_and_cows.serializers import GameSerializer, PlayerGameSerializer, ComputerGameSerializer
+from bulls_and_cows.models import Game, PlayerGame
+from bulls_and_cows.serializers import GameSerializer
 from random import random, choice
 from hashlib import sha512
-from itertools import permutations, combinations
-from bulls_and_cows.utils import cows_filter, bulls_filter, fields_match
+from itertools import permutations
+from bulls_and_cows.utils import cows_filter, bulls_filter, set_cache, get_cache
 from django.shortcuts import get_object_or_404
 from re import match
-from time import perf_counter
 from django.core.cache import cache
 
 ERROR_MESSAGE = lambda field: "'{}' is invalid".format(field)
@@ -35,7 +30,7 @@ def create_game(request):
         return Response({'error': ERROR_MESSAGE('digits')}, status=status.HTTP_400_BAD_REQUEST)
 
     key = sha512(str(random()).encode('utf-8')).hexdigest()
-    game = Game(key=key)
+    game = Game(key=key, player_guesses=request.data['player_guesses'])
     game.save()
 
     if request.data['player_guesses']:
@@ -47,8 +42,7 @@ def create_game(request):
     elif not request.data['player_guesses']:
         digits = int(request.data['digits'])
         available_numbers = list(permutations("0123456789", digits))
-        cache.set('available_numbers', available_numbers, 300)
-
+        set_cache(key, 'available_numbers', available_numbers)
     serializer = GameSerializer(game)
 
     return Response(serializer.data)
@@ -123,9 +117,10 @@ def get_computer_try(request):
         return Response(serializer.data)
 
     try:
-        number = ''.join(choice(cache.get('available_numbers')))
+        # number = ''.join(choice(list(cache.get('available_numbers'))))
+        number = ''.join(choice(list(get_cache(key, 'available_numbers'))))
     except IndexError as error:
-        return Response({'error': error}, status=400)
+        return Response({'error': str(error)}, status=400)
     else:
         return Response({'number': number})
 
@@ -149,33 +144,14 @@ def send_answer(request):
     bulls = int(request.data['bulls'])
     cows = int(request.data['cows'])
     history_data = {'number': number, 'bulls': bulls, 'cows': cows, 'winner': False}
-    # computer_game = get_object_or_404(ComputerGame, game__key=key)
     game = get_object_or_404(Game, key=key)
-
-    if bulls == len(number):
-        history_data['winner'] = True
-        # serializer = GameSerializer(computer_game.game)
-        serializer = GameSerializer(game)
-        return Response(serializer.data)
-
-    # if computer_game.game.history is not None and computer_game.game.history[-1]['winner']:
-    #     serializer = GameSerializer(computer_game.game)
-    #     return Response(serializer.data)
 
     if game.history is not None and game.history[-1]['winner']:
         serializer = GameSerializer(game)
         return Response(serializer.data)
 
-    available_variants = cows_filter(bulls + cows, number, cache.get('available_numbers'))
-    available_variants = bulls_filter(bulls, number, available_variants)
-    # computer_game.available_numbers = available_variants
-    cache.set('available_numbers', available_variants, 300)
-    history_data = {'number': number, 'bulls': bulls, 'cows': cows, 'winner': False}
-
-    # if computer_game.game.history is None:
-    #     computer_game.game.history = [history_data]
-    # else:
-    #     computer_game.game.history.append(history_data)
+    if bulls == len(number):
+        history_data['winner'] = True
 
     if game.history is None:
         game.history = [history_data]
@@ -183,7 +159,18 @@ def send_answer(request):
         game.history.append(history_data)
 
     game.save()
-    # computer_game.save()
     serializer = GameSerializer(game)
 
+    # если текущий ход - победный, вернуть без фильтрации и очистить кэш
+    if history_data['winner']:
+        cache.delete('available_numbers')
+        return Response(serializer.data)
+
+    available_numbers = get_cache(key, 'available_numbers')
+    available_numbers = cows_filter(bulls + cows, number, available_numbers)
+    available_numbers = bulls_filter(bulls, number, available_numbers)
+    set_cache(key, 'available_numbers', available_numbers)
+
     return Response(serializer.data)
+
+

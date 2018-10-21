@@ -1,6 +1,5 @@
 from itertools import combinations
-from rest_framework import status
-from rest_framework.response import Response
+from django.core.cache import cache
 from re import match
 
 
@@ -11,6 +10,7 @@ from re import match
 }
 Валидирует поля.
 '''
+# TODO: не тестировалось
 def fields_match(data, *fields):
     errors = []
     for field in fields:
@@ -22,6 +22,14 @@ def fields_match(data, *fields):
             errors.append('Field "{}" is invalid'.format(fname))
 
     return errors
+
+
+def set_cache(game_key, prefix, array):
+    cache.set('{0}:{1}'.format(game_key, prefix), array)
+
+
+def get_cache(game_key, prefix):
+    return cache.get('{0}:{1}'.format(game_key, prefix))
 
 
 # Фильтрует варианты по "коровам". cows_and_bulls - сумма быков и коров, number - число, по которому нужно

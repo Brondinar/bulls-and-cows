@@ -81,7 +81,6 @@ WSGI_APPLICATION = 'spa_games.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        # 'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         'NAME': local_settings.DB_NAME,
         'USER': local_settings.DB_USER,
         'PASSWORD': local_settings.DB_PASSWORD,
@@ -89,7 +88,6 @@ DATABASES = {
         'PORT': ''
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
@@ -111,9 +109,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
-        'LOCATION': '127.0.0.1:11211',
-        'TIMEOUT': 600
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'numbers-cache',
     }
 }
 
