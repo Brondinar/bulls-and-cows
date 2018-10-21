@@ -1,4 +1,4 @@
-"""spa_games URL Configuration
+"""bulls-and-cows URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/2.1/topics/http/urls/
@@ -18,6 +18,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('', include('frontend.urls')),
-    path('api/', include('bulls_and_cows.urls')),
+    path('api/', include('backend.urls')),
     path('admin/', admin.site.urls)
 ]

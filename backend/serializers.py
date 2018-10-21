@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from bulls_and_cows.models import Game, PlayerGame
+from backend.models import Game, PlayerGame
 
 
 class GameSerializer(serializers.ModelSerializer):

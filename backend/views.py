@@ -1,12 +1,12 @@
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from bulls_and_cows.models import Game, PlayerGame
-from bulls_and_cows.serializers import GameSerializer
+from backend.models import Game, PlayerGame
+from backend.serializers import GameSerializer
 from random import random, choice
 from hashlib import sha512
 from itertools import permutations
-from bulls_and_cows.utils import cows_filter, bulls_filter, set_cache, get_cache
+from backend.utils import cows_filter, bulls_filter, set_cache, get_cache
 from django.shortcuts import get_object_or_404
 from re import match
 from django.core.cache import cache
